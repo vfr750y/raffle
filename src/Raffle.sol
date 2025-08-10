@@ -1,24 +1,3 @@
-// Layout of Contract:
-// version
-// imports
-// errors
-// interfaces, libraries, contracts
-// Type declarations
-// State variables
-// Events
-// Modifiers
-// Functions
-
-// Layout of Functions:
-// constructor
-// receive function (if exists)
-// fallback function (if exists)
-// external
-// public
-// internal
-// private
-// view & pure functions
-
 // SPDX-License-identifier: MIT
 pragma solidity ^0.8.19;
 
@@ -26,10 +5,10 @@ import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFCo
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 
 /**
- * @title A sample raffle contract
+ * @title  A sample raffle contract
  * @author Ajay Curry
  * @notice Create a sample raffle
- * @dev Implements Chainlink VRFv2.5
+ * @dev    Implements Chainlink VRFv2.5
  */
 
 contract Raffle is VRFConsumerBaseV2Plus {
