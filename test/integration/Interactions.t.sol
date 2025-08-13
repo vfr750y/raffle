@@ -38,10 +38,9 @@ contract CreateSubscriptionTest is Test, CodeConstants {
         address account = TEST_ACCOUNT;
 
         // Act
-        vm.startPrank(account); // Simulate transaction from TEST_ACCOUNT
+        // No vm.startPrank needed, as createSubscription uses vm.startBroadcast internally
         (uint256 subId, address returnedVrfCoordinator) = createSubscription
             .createSubscription(vrfCoordinator, account);
-        vm.stopPrank();
 
         // Assert
         assertGt(subId, 0); // Subscription ID should be non-zero
@@ -73,10 +72,9 @@ contract CreateSubscriptionTest is Test, CodeConstants {
         );
 
         // Act
-        vm.startPrank(TEST_ACCOUNT);
+        // No vm.startPrank needed, as CreateSubscriptionUsingConfig uses vm.startBroadcast internally
         (uint256 subId, address returnedVrfCoordinator) = createSubscription
             .CreateSubscriptionUsingConfig();
-        vm.stopPrank();
 
         // Assert
         assertGt(subId, 0); // Subscription ID should be non-zero
@@ -91,9 +89,7 @@ contract CreateSubscriptionTest is Test, CodeConstants {
         address account = TEST_ACCOUNT;
 
         // Act & Assert
-        vm.startPrank(account);
         vm.expectRevert(); // Expect revert due to invalid contract address
         createSubscription.createSubscription(invalidVrfCoordinator, account);
-        vm.stopPrank();
     }
 }
