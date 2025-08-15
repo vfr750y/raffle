@@ -2,10 +2,11 @@
 pragma solidity ^0.8.19;
 
 import {Test, console} from "forge-std/Test.sol";
-import {CreateSubscription} from "../../script/Interactions.s.sol";
+import {CreateSubscription, FundSubscription} from "../../script/Interactions.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {VRFCoordinatorV2_5Mock} from "@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
 import {CodeConstants} from "../../script/HelperConfig.s.sol";
+import {LinkToken} from "../mocks/LinkToken.sol";
 
 contract CreateSubscriptionTest is Test, CodeConstants {
     CreateSubscription public createSubscription;
@@ -118,5 +119,86 @@ contract CreateSubscriptionTest is Test, CodeConstants {
         // Act & Assert
         vm.expectRevert(); // Expect revert due to invalid contract address
         createSubscription.createSubscription(invalidVrfCoordinator, account);
+    }
+}
+
+contract FundSubscriptionTest is Test, CodeConstants {
+    FundSubscription public fundSubscription;
+    HelperConfig public helperConfig;
+    VRFCoordinatorV2_5Mock public vrfCoordinatorMock;
+    LinkToken public linkToken;
+
+    address public constant TEST_ACCOUNT = address(0x123); // Test account for broadcasting
+    uint256 public constant FUND_AMOUNT = 3 ether; // Matches FundSubscripton.sol
+
+    function setUp() public {
+        // Deploy the VRFCoordingatorV2_5Mock using inherited constants
+        vrfCoordinatorMock = new VRFCoordinatorV2_5Mock(
+            MOCK_BASE_FEE,
+            MOCK_GAS_PRICE_LINK,
+            MOCK_WEI_PER_UNIT_LINK
+        );
+
+        // Deploy LinToken
+        linkToken = new LinkToken();
+
+        // Deploy Helper Config
+        helperConfig = new HelperConfig();
+
+        // Deploy FundSubscription
+        fundSubscription = new FundSubscription();
+        vm.chainId(LOCAL_CHAIN_ID);
+
+        //Fund TEST_ACCOUNT with LINK tokens
+        vm.startBroadcast();
+        linkToken.mint(TEST_ACCOUNT, 100 ether); // Mint enough LINK for testing
+        vm.stopBroadcast();
+    }
+
+    function testFundSubscriptionFundsCorrectlyOnLocalChain() public {
+        //Arrange
+        address vrfCoordinator = address(vrfCoordinatorMock);
+        address account = TEST_ACCOUNT;
+        address linkTokenAddress = address(linkToken);
+
+        // Create a subscription first
+        vm.startBroadcast(account);
+        uint256 subId = vrfCoordinatorMock.createSubscription();
+        vm.stopBroadcast();
+
+        // Approve LINK token transfer
+        vm.prank(account);
+        linkToken.approve(vrfCoordinator, FUND_AMOUNT);
+
+        // Get initial subscription balance
+        (uint96 initialBalance, , , , ) = vrfCoordinatorMock.getSubscription(
+            subId
+        );
+
+        // Act
+        fundSubscription.fundSubscription(
+            vrfCoordinator,
+            subId,
+            linkTokenAddress,
+            account
+        );
+
+        // Assert
+        (uint96 finalBalance, , , , ) = vrfCoordinatorMock.getSubscription(
+            subId
+        );
+        assertEq(
+            finalBalance,
+            initialBalance + uint96(FUND_AMOUNT * 100),
+            "Subscription balance should increase by FUND_AMOUNT * 100"
+        );
+
+        // Verify LINK token balance of VRFCoordinator
+        /*uint256 coordinatorLinkBalance = linkToken.balanceOf(vrfCoordinator);
+        assertEq(
+            coordinatorLinkBalance,
+            FUND_AMOUNT,
+            "VRFCoordinator should receive FUND_AMOUNT in LINK tokens"
+        ); */
     }
 }
